@@ -1,5 +1,5 @@
-import { collection, addDoc, getDocs, query, where, deleteDoc } from "firebase/firestore";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, deleteDoc, arrayRemove } from "firebase/firestore";
+import { doc, onSnapshot, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
 // 🔧 Create a new forest with 40 null owners
@@ -46,28 +46,19 @@ export async function fetchUserNameByEmail(email) {
 
 // 📄 Get full forest data by name
 export const fetchForestByName = async (name) => {
-    try {
-      const q = query(collection(db, "forests"), where("name", "==", name));
-      const snapshot = await getDocs(q);
-  
-      if (snapshot.empty) {
-        console.warn("⚠️ No forest found with name:", name);
-        return null;
-      }
-  
-      const forestDoc = snapshot.docs[0];
-      const data = forestDoc.data();
-      console.log("✅ Forest data loaded:", data);
-  
-      return {
-        id: forestDoc.id,
-        ...data
-      };
-    } catch (error) {
-      console.error("❌ Error fetching forest:", error);
-      return null;
-    }
-  };
+  const q = query(collection(db, "forests"), where("name", "==", name));
+  const snapshot = await getDocs(q);
+
+  if (!snapshot.empty) {
+    const forestDoc = snapshot.docs[0];
+    return {
+      id: forestDoc.id,
+      ...forestDoc.data()
+    };
+  } else {
+    return null;
+  }
+};
   
   // 🔽 Tree Ekle
 export const saveTreeToFirestore = async (forestId, treeData) => {
@@ -110,3 +101,40 @@ export const deleteTreeFromFirestore = async (forestId, gardenIndex, row, col) =
   });
 };
 
+// 🔧 Admin: Kullanıcıyı sil ve sahipliğini sıfırla
+export const deleteUserFromFirebase = async (userEmail, forestId) => {
+  try {
+    // 1. users koleksiyonundan kullanıcıyı bul
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("email", "==", userEmail));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      console.warn("Kullanıcı bulunamadı:", userEmail);
+      return;
+    }
+
+    const userDoc = snapshot.docs[0];
+    const userDocId = userDoc.id;
+
+    // 2. Kullanıcıyı sil
+    await deleteDoc(doc(db, "users", userDocId));
+
+    // 3. forest içindeki owners listesinden kaldır
+    const forestRef = doc(db, "forests", forestId);
+    const forestSnap = await getDoc(forestRef);
+    const forestData = forestSnap.data();
+
+    const updatedOwners = forestData.owners.map((owner) =>
+      owner === userEmail ? null : owner
+    );
+
+    await updateDoc(forestRef, {
+      owners: updatedOwners,
+    });
+
+    console.log("✅ Kullanıcı silindi ve sahiplik sıfırlandı.");
+  } catch (error) {
+    console.error("🚨 Kullanıcı silinirken hata:", error);
+  }
+};

@@ -4,7 +4,7 @@ import Image from "next/image";
 import dirtTile from "../public/assets/tiles/dirt.png";
 import treeImage from "../public/assets/tiles/tree.png";
 
-export default function IsometricTile({ row, col, size, planted, onClick }) {
+export default function IsometricTile({ row, col, size, planted, onClick, metadata, onHoverTree, onLeaveTree }) {
   const spacing = 2;
   const left = (col - row) * (size / 2 + spacing) + size * 2.68;
   const top = (col + row) * (size / 4 + spacing / 2) - size * 0.33;
@@ -33,8 +33,8 @@ export default function IsometricTile({ row, col, size, planted, onClick }) {
         height={size * 0.83}
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
+          top: -3,
+          left: -3,
           pointerEvents: "none",
           transform: "rotateX(60deg) rotateZ(45deg)",
           zIndex: 1,
