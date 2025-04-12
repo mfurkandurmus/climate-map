@@ -1,95 +1,120 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+// app/page.js
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+"use client";
+import React, { useState, useEffect } from "react";
+import ForestSelector from "@/components/ForestSelector";
+import AuthForm from "@/components/AuthForm";
+import HomeComponent from "@/components/HomeComponent";
+import { fetchForestByName } from "@/firebase/firestoreHelpers";
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+export default function Page() {
+  const [step, setStep] = useState("selectForest");
+  const [selectedForest, setSelectedForest] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [forestData, setForestData] = useState(null);
+
+  useEffect(() => {
+    const loadForestData = async () => {
+      if (step === "loadingForest" && selectedForest && currentUser) {
+        const data = await fetchForestByName(selectedForest);
+        setForestData(data);
+        setStep("home");
+      }
+    };
+    loadForestData();
+  }, [step, selectedForest, currentUser]);
+
+  if (step === "selectForest") {
+    return (
+      <ForestSelector
+        onForestSelected={(forest) => {
+          setSelectedForest(forest);
+          setStep("chooseRole");
+        }}
+      />
+    );
+  }
+
+  if (step === "chooseRole") {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          backgroundColor: "#eaf7ee",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "Arial",
+        }}
+      >
+        <h2 style={{ fontSize: "1.8rem", marginBottom: "20px", color: "#2d4739" }}>
+          Are you a garden owner?
+        </h2>
+        <button
+          onClick={() => setStep("login")}
+          style={{
+            backgroundColor: "#4caf50",
+            color: "white",
+            padding: "12px 24px",
+            margin: "10px",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "1rem",
+            cursor: "pointer",
+          }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          ✅ Yes, I already have a garden
+        </button>
+        <button
+          onClick={() => setStep("signup")}
+          style={{
+            backgroundColor: "#2196f3",
+            color: "white",
+            padding: "12px 24px",
+            margin: "10px",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "1rem",
+            cursor: "pointer",
+          }}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+          🌱 No, I want to become a garden owner
+        </button>
+      </div>
+    );
+  }
+
+  if ((step === "login" || step === "signup") && !currentUser) {
+    return (
+      <AuthForm
+        selectedForest={selectedForest}
+        onAuthenticated={(user) => {
+          localStorage.setItem("climate_user", JSON.stringify(user));
+          setCurrentUser(user);
+          setStep("loadingForest");
+        }}
+        isSignup={step === "signup"}
+      />
+    );
+  }
+
+  if (step === "loadingForest") {
+    return (
+      <div style={{ textAlign: "center", marginTop: "200px" }}>
+        🌱 Loading forest...
+      </div>
+    );
+  }
+
+  if (step === "home" && forestData && currentUser) {
+    return (
+      <HomeComponent
+        forestName={selectedForest}
+        currentUser={currentUser}
+      />
+    );
+  }
+
+  return null;
 }
