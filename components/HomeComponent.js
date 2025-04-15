@@ -9,10 +9,11 @@ import TreePopup from "./TreePopup";
 import { fetchAllTreesForForest, saveTreeToFirestore, deleteTreeFromFirestore } from "../firebase/firestoreHelpers";
 import { useRef } from "react";
 import { deleteUserFromFirebase } from "../firebase/firestoreHelpers";
+import { fetchAllForests } from "../firebase/firestoreHelpers";
 
 console.log("🔍 saveTreeToFirestore:", saveTreeToFirestore);
 
-export default function HomeComponent({ forestName: initialForestName, currentUser: initialUser }) {
+export default function HomeComponent({ forestName: initialForestName, currentUser: initialUser, onChangeForest }) {
   const totalGardens = 40;
   const plotsPerGarden = 16;
 
@@ -31,7 +32,79 @@ export default function HomeComponent({ forestName: initialForestName, currentUs
 
   const containerRef = useRef();
   
-  
+  // HomeComponent fonksiyonunun başına şu state'i ekle:
+const [availableForests, setAvailableForests] = useState([]);
+
+useEffect(() => {
+  const loadForests = async () => {
+    const forests = await fetchAllForests();
+    setAvailableForests(forests);
+    console.log("Loaded forests:", forests); // <-- bunu ekle
+  };
+  loadForests();
+}, []);
+
+useEffect(() => {
+  console.log("initialForestName:", initialForestName);
+  console.log("availableForests:", availableForests);
+  console.log("currentUser:", currentUser);
+}, [initialForestName, availableForests, currentUser]);
+
+<div style={{
+  position: "fixed",
+  top: "120px",
+  left: "50%",
+  transform: "translateX(-50%)",
+  zIndex: 999999,
+  backgroundColor: "#ffffff",
+  padding: "10px",
+}}>
+<select
+  onChange={(e) => onChangeForest(e.target.value)}
+  style={{ padding: "8px", fontSize: "16px" }}
+>
+  {availableForests.map((forest) => (
+    <option key={forest.id} value={forest.name}>
+      {forest.name}
+    </option>
+  ))}
+</select>
+
+</div>
+
+// JSX return içindeki üst kısma (örneğin statistics bloğunun hemen altına):
+{currentUser?.isVisitor && availableForests.length > 0 && (
+  <div style={{
+    position: "fixed",
+    top: "120px",  // Üstteki stats panelinin altında net görünsün
+    left: "50%",
+    transform: "translateX(-50%)",
+    zIndex: 99999,  // çok yüksek yapıyoruz
+    backgroundColor: "#fff", // arka plan net olsun
+    padding: "8px 12px",
+    borderRadius: "10px",
+    boxShadow: "0 4px 8px rgba(0,0,0,0.1)"
+  }}>
+    <select
+      value={initialForestName}
+      onChange={(e) => onChangeForest(e.target.value)}
+      style={{
+        padding: "8px 16px",
+        borderRadius: "8px",
+        border: "1px solid #888",
+        cursor: "pointer",
+        fontSize: "16px"
+      }}
+    >
+      {availableForests.map((forest) => (
+        <option key={forest.id} value={forest.name}>
+          {forest.name}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
   // İstatistikleri hesaplama
   const recalculateStats = (updatedForest) => {
     const activeOwnersCount = updatedForest?.owners?.filter(owner => owner !== null).length || 0;
@@ -123,6 +196,7 @@ console.log("freeGardens:", freeGardens);
 console.log("activeOwners:", activeOwners);
 
   const handleTileClick = (gardenIndex, row, col) => {
+    if (currentUser?.isVisitor) return; // visitor düzenleyemesin
     const isOwner = forestData?.owners?.[gardenIndex] === currentUser?.email;
     if (!isOwner) return;
 
@@ -160,6 +234,41 @@ console.log("activeOwners:", activeOwners);
   <strong>Total Trees:</strong> {totalTrees} |{" "}
   <strong>Avg Greenery:</strong> {averageGreenPercentage}%
 </div>
+
+{currentUser?.isVisitor && (
+  <div
+    style={{
+      position: "fixed",
+      top: "90px", // istatistik kutusunun hemen altı
+      left: "50%",
+      transform: "translateX(-50%)",
+      zIndex: 1001,
+      backgroundColor: "#ffffffdd",
+      padding: "6px 16px",
+      borderRadius: "10px",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+    }}
+  >
+    <select
+      value={initialForestName}
+      onChange={(e) => onChangeForest(e.target.value)}
+      style={{
+        padding: "6px 12px",
+        fontSize: "15px",
+        borderRadius: "8px",
+        border: "1px solid #ccc",
+        cursor: "pointer",
+      }}
+    >
+      {availableForests.map((forest) => (
+        <option key={forest.id} value={forest.name}>
+          {forest.name}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
 {currentUser?.email === "admin@forest.com" && (
     <div style={{ position: "fixed", top: 10, right: 20, zIndex: 9999 }}>
       <button

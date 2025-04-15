@@ -1,5 +1,3 @@
-// app/page.js
-
 "use client";
 import React, { useState, useEffect } from "react";
 import ForestSelector from "@/components/ForestSelector";
@@ -27,9 +25,16 @@ export default function Page() {
   if (step === "selectForest") {
     return (
       <ForestSelector
-        onForestSelected={(forest) => {
+        onForestSelected={(forest, mode = "user") => {
           setSelectedForest(forest);
-          setStep("chooseRole");
+          if (mode === "visitor") {
+            const visitorUser = { name: "Visitor", email: "visitor@demo.com", isVisitor: true };
+            localStorage.setItem("climate_user", JSON.stringify(visitorUser));
+            setCurrentUser(visitorUser);
+            setStep("loadingForest");
+          } else {
+            setStep("chooseRole");
+          }
         }}
       />
     );
@@ -37,48 +42,14 @@ export default function Page() {
 
   if (step === "chooseRole") {
     return (
-      <div
-        style={{
-          height: "100vh",
-          backgroundColor: "#eaf7ee",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "Arial",
-        }}
-      >
+      <div style={{ height: "100vh", backgroundColor: "#eaf7ee", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "Arial" }}>
         <h2 style={{ fontSize: "1.8rem", marginBottom: "20px", color: "#2d4739" }}>
           Are you a garden owner?
         </h2>
-        <button
-          onClick={() => setStep("login")}
-          style={{
-            backgroundColor: "#4caf50",
-            color: "white",
-            padding: "12px 24px",
-            margin: "10px",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "1rem",
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={() => setStep("login")} style={{ backgroundColor: "#4caf50", color: "white", padding: "12px 24px", margin: "10px", border: "none", borderRadius: "8px", fontSize: "1rem", cursor: "pointer" }}>
           ✅ Yes, I already have a garden
         </button>
-        <button
-          onClick={() => setStep("signup")}
-          style={{
-            backgroundColor: "#2196f3",
-            color: "white",
-            padding: "12px 24px",
-            margin: "10px",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "1rem",
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={() => setStep("signup")} style={{ backgroundColor: "#2196f3", color: "white", padding: "12px 24px", margin: "10px", border: "none", borderRadius: "8px", fontSize: "1rem", cursor: "pointer" }}>
           🌱 No, I want to become a garden owner
         </button>
       </div>
@@ -100,18 +71,20 @@ export default function Page() {
   }
 
   if (step === "loadingForest") {
-    return (
-      <div style={{ textAlign: "center", marginTop: "200px" }}>
-        🌱 Loading forest...
-      </div>
-    );
+    return <div style={{ textAlign: "center", marginTop: "200px" }}>🌱 Loading forest...</div>;
   }
 
   if (step === "home" && forestData && currentUser) {
     return (
       <HomeComponent
+        key={selectedForest} // <-- bu önemli, orman değiştiğinde komple refresh sağlar
         forestName={selectedForest}
         currentUser={currentUser}
+        isVisitor={currentUser.isVisitor}
+        onChangeForest={(newForest) => {
+          setSelectedForest(newForest);
+          setStep("loadingForest");
+        }}
       />
     );
   }

@@ -104,6 +104,29 @@ export default function ForestSelector({ onForestSelected }) {
       >
         {creating ? "Creating..." : "Create Forest"}
       </button>
+      <button
+  onClick={() => {
+    const selectedName = newForestName.trim() || availableForests[0]?.name || "";
+    if (selectedName) {
+      onForestSelected(selectedName, "visitor");
+    } else {
+      alert("Please select or create a forest first.");
+    }
+  }}
+  style={{
+    marginTop: "12px",
+    padding: "10px 20px",
+    fontSize: "1rem",
+    backgroundColor: "#888",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  }}
+>
+  👁 Continue as Visitor
+</button>
+
       {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
     </div>
   );
