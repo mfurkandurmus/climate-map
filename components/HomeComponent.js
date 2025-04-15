@@ -39,7 +39,6 @@ useEffect(() => {
   const loadForests = async () => {
     const forests = await fetchAllForests();
     setAvailableForests(forests);
-    console.log("Loaded forests:", forests); // <-- bunu ekle
   };
   loadForests();
 }, []);
@@ -127,9 +126,7 @@ useEffect(() => {
       if (!initialForestName) return;
       const forest = await fetchForestByName(initialForestName);
       setForestData(forest);
-    
-      recalculateStats(forest); // <--- 🔧 BU SATIRI EKLE
-    
+        
       const names = await Promise.all(
         forest.owners.map(async (email) => {
           if (!email) return null;
@@ -234,6 +231,37 @@ console.log("activeOwners:", activeOwners);
   <strong>Total Trees:</strong> {totalTrees} |{" "}
   <strong>Avg Greenery:</strong> {averageGreenPercentage}%
 </div>
+{currentUser?.email === "admin@forest.com" && (
+  <div style={{
+    position: "fixed",
+    top: "90px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    zIndex: 1001,
+    backgroundColor: "#ffffffdd",
+    padding: "6px 16px",
+    borderRadius: "10px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+  }}>
+    <select
+      value={initialForestName}
+      onChange={(e) => onChangeForest(e.target.value)}
+      style={{
+        padding: "6px 12px",
+        fontSize: "15px",
+        borderRadius: "8px",
+        border: "1px solid #ccc",
+        cursor: "pointer",
+      }}
+    >
+      {availableForests.map((forest) => (
+        <option key={forest.id} value={forest.name}>
+          {forest.name}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
 
 {currentUser?.isVisitor && (
   <div
